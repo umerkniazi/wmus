@@ -1,0 +1,11 @@
+dist/
+build/
+installer_files/
+Output/
+*.spec
+*.pyc
+__pycache__/
+*.tar.gz
+*.zip
+*.exe
+playlist_cache_*.json

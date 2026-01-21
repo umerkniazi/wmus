@@ -1,0 +1,76 @@
+{
+  "_comment": "wmus v1.0.0 Configuration File",
+  "_description": "Customize keybindings, playback settings, and default behavior",
+  "keybindings": {
+    "_comment": "Key format: single chars ('a'), key names ('KEY_UP'), or ASCII codes (10)",
+    "_tip": "Multiple keys can be bound to the same action using arrays",
+    "quit": [
+      ":q"
+    ],
+    "search": [
+      "/"
+    ],
+    "next": [
+      "n"
+    ],
+    "prev": [
+      "p"
+    ],
+    "play_pause": [
+      "c"
+    ],
+    "down": [
+      "KEY_DOWN",
+      "j"
+    ],
+    "up": [
+      "KEY_UP",
+      "k"
+    ],
+    "enter": [
+      "KEY_ENTER",
+      10,
+      13
+    ],
+    "shuffle": [
+      "s"
+    ],
+    "repeat": [
+      "r"
+    ],
+    "volume_up": [
+      "+",
+      "="
+    ],
+    "volume_down": [
+      "-"
+    ],
+    "fadeout": [
+      "f"
+    ],
+    "queue": [
+      "e"
+    ],
+    "seek_forward": [
+      "KEY_RIGHT"
+    ],
+    "seek_backward": [
+      "KEY_LEFT"
+    ]
+  },
+  "_settings_comment": "Application Settings",
+  "music_folder": "D:/Music",
+  "_music_folder_tip": "Path to your music library. Use :add <folder> command to set",
+  "seek_seconds": 5,
+  "_seek_seconds_tip": "Number of seconds to skip when seeking forward/backward",
+  "shuffle": false,
+  "_shuffle_tip": "Start with shuffle mode enabled (true/false)",
+  "repeat": false,
+  "_repeat_tip": "Start with repeat mode enabled (true/false)",
+  "volume": 1.0,
+  "_volume_tip": "Default volume level (0.0 to 1.0, where 1.0 is 100%)",
+  "default_view": 1,
+  "_default_view_tip": "Starting view mode: 1=Library, 2=Albums, 3=Queue",
+  "_available_keys": "KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ENTER, KEY_BACKSPACE, KEY_DC (Delete)",
+  "_commands": "Type ':help' in wmus for full command reference"
+}
