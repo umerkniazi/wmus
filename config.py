@@ -2,6 +2,9 @@ import os
 import json
 from pathlib import Path
 
+CONFIG_DIR = Path(os.getenv('LOCALAPPDATA')) / 'wmus' / 'config'
+CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
 DEFAULT_CONFIG = {
     "keybindings": {
         "quit": [":q"],
@@ -29,8 +32,11 @@ DEFAULT_CONFIG = {
     "default_view": 1
 }
 
-def load_config(path="config.json"):
-    path = Path(path).expanduser()
+def load_config(path=None):
+    if path is None:
+        path = CONFIG_DIR / "config.json"
+    else:
+        path = Path(path).expanduser()
     
     if not path.exists():
         return DEFAULT_CONFIG.copy()
@@ -57,8 +63,12 @@ def load_config(path="config.json"):
     
     return config
 
-def save_config(config, path="config.json"):
-    path = Path(path).expanduser()
+def save_config(config, path=None):
+    if path is None:
+        path = CONFIG_DIR / "config.json"
+    else:
+        path = Path(path).expanduser()
+    
     config_to_save = config.copy()
     
     if "music_folder" in config_to_save and config_to_save["music_folder"]:

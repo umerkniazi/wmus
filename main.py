@@ -15,7 +15,7 @@ from ui import UI
 APP_VERSION = "1.0.0"
 CACHE_VERSION = "1.0"
 
-CACHE_DIR = Path(os.getenv('APPDATA')) / 'wmus'
+CACHE_DIR = Path(os.getenv('LOCALAPPDATA')) / 'wmus' / 'cache'
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 if sys.platform == "win32":
