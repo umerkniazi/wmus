@@ -1,5 +1,5 @@
 #define MyAppName "wmus"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Umer Khan"
 #define MyAppURL "https://github.com/umerkniazi/wmus"
 #define MyAppExeName "wmus.exe"

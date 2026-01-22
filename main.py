@@ -12,7 +12,7 @@ from config import load_config, save_config
 from helpers import key_match, search, get_folder_hash, help_text
 from ui import UI
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 CACHE_VERSION = "1.0"
 
 CACHE_DIR = Path(os.getenv('LOCALAPPDATA')) / 'wmus' / 'cache'
@@ -106,7 +106,7 @@ class CLI:
         'selected_index', 'scroll_offset', 'shuffle', 'repeat', 'volume', 
         'view_mode', 'queue_list', 'albums', 'album_names', 'album_view_selected',
         'queue_index', 'album_songs_scroll', 'album_song_selected', 'album_column',
-        'error_message', 'ui'
+        'error_message', 'ui', 'last_seek_time', 'last_seek_delta'
     )
     
     def __init__(self, stdscr, config):
@@ -141,6 +141,8 @@ class CLI:
         self.album_column = 0
         
         self.error_message = ""
+        self.last_seek_time = 0
+        self.last_seek_delta = 0
     
     def _get_song_info(self, filepath):
         if filepath in self.song_cache:
@@ -617,17 +619,15 @@ class CLI:
         display_list = self._get_display_list()
         search_state.filtered_indices = search(search_state.query, display_list)
         
-        kb = self.keybindings
-        
-        if key_match(key, kb["down"]):
+        if key == curses.KEY_DOWN:
             if search_state.filtered_indices and search_state.selected < len(search_state.filtered_indices) - 1:
                 search_state.selected += 1
-        elif key_match(key, kb["up"]):
+        elif key == curses.KEY_UP:
             if search_state.selected > 0:
                 search_state.selected -= 1
-        elif key in (27,) or key_match(key, kb["quit"]):
+        elif key in (27,):
             search_state.deactivate()
-        elif key_match(key, kb["enter"]):
+        elif key in (10, 13):
             if search_state.filtered_indices and search_state.selected < len(search_state.filtered_indices):
                 self.selected_index = search_state.filtered_indices[search_state.selected]
             search_state.deactivate()
@@ -643,6 +643,16 @@ class CLI:
         
         if search_state.filtered_indices and search_state.selected >= len(search_state.filtered_indices):
             search_state.selected = max(0, len(search_state.filtered_indices) - 1)
+    
+    def _seek_with_throttle(self, delta):
+        now = time.time()
+        if self.last_seek_delta == delta and (now - self.last_seek_time) < 0.15:
+            return
+        self.last_seek_time = now
+        self.last_seek_delta = delta
+        self.player.seek(delta)
+        direction = "forward" if delta > 0 else "backward"
+        self.error_message = f"Seeked {direction} {abs(delta)}s"
     
     def _handle_regular_input(self, key, search_state, command_state):
         kb = self.keybindings
@@ -680,11 +690,9 @@ class CLI:
             self.player.fadeout()
             self.error_message = "Fading out..."
         elif key_match(key, kb.get("seek_forward", [])) and self.view_mode != 2:
-            self.player.seek(self.seek_seconds)
-            self.error_message = f"Seeked forward {self.seek_seconds}s"
+            self._seek_with_throttle(self.seek_seconds)
         elif key_match(key, kb.get("seek_backward", [])) and self.view_mode != 2:
-            self.player.seek(-self.seek_seconds)
-            self.error_message = f"Seeked backward {self.seek_seconds}s"
+            self._seek_with_throttle(-self.seek_seconds)
         elif key in (ord('1'), ord('2'), ord('3')):
             self._switch_view(int(chr(key)))
             self.error_message = ""
