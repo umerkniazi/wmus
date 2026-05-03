@@ -1,9 +1,8 @@
-import os
 import json
+import copy
 from pathlib import Path
+from paths import CONFIG_DIR
 
-CONFIG_DIR = Path(os.getenv('LOCALAPPDATA')) / 'wmus' / 'config'
-CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_CONFIG = {
     "keybindings": {
@@ -32,46 +31,52 @@ DEFAULT_CONFIG = {
     "default_view": 1
 }
 
+
 def load_config(path=None):
     if path is None:
         path = CONFIG_DIR / "config.json"
     else:
         path = Path(path).expanduser()
-    
+
     if not path.exists():
-        return DEFAULT_CONFIG.copy()
-    
+        return copy.deepcopy(DEFAULT_CONFIG)
+
     try:
         with open(path, "r", encoding="utf-8") as f:
             config = json.load(f)
     except (json.JSONDecodeError, IOError):
-        return DEFAULT_CONFIG.copy()
-    
+        return copy.deepcopy(DEFAULT_CONFIG)
+
+    # Merge missing top-level keys
     for k in DEFAULT_CONFIG:
         if k not in config:
-            config[k] = DEFAULT_CONFIG[k]
-    
+            config[k] = copy.deepcopy(DEFAULT_CONFIG[k])
+
+    # Merge keybindings safely
     if "keybindings" not in config:
-        config["keybindings"] = DEFAULT_CONFIG["keybindings"].copy()
+        config["keybindings"] = copy.deepcopy(DEFAULT_CONFIG["keybindings"])
     else:
         for k in DEFAULT_CONFIG["keybindings"]:
             if k not in config["keybindings"]:
-                config["keybindings"][k] = DEFAULT_CONFIG["keybindings"][k]
-    
-    if "music_folder" in config and config["music_folder"]:
+                config["keybindings"][k] = copy.deepcopy(DEFAULT_CONFIG["keybindings"][k])
+
+    # Normalize music folder path
+    if config.get("music_folder"):
         config["music_folder"] = str(Path(config["music_folder"]).expanduser())
-    
+
     return config
+
 
 def save_config(config, path=None):
     if path is None:
         path = CONFIG_DIR / "config.json"
     else:
         path = Path(path).expanduser()
-    
-    config_to_save = config.copy()
-    
-    if "music_folder" in config_to_save and config_to_save["music_folder"]:
+
+    config_to_save = copy.deepcopy(config)
+
+    # Store music path relative to home if possible
+    if config_to_save.get("music_folder"):
         music_path = Path(config_to_save["music_folder"])
         home = Path.home()
         try:
@@ -79,6 +84,6 @@ def save_config(config, path=None):
             config_to_save["music_folder"] = str(Path("~") / rel_path).replace("\\", "/")
         except ValueError:
             config_to_save["music_folder"] = str(music_path).replace("\\", "/")
-    
+
     with open(path, "w", encoding="utf-8") as f:
         json.dump(config_to_save, f, indent=2)

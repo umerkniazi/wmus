@@ -9,14 +9,13 @@ from pathlib import Path
 from player import MusicPlayer, PlaybackState
 from mutagen import File
 from config import load_config, save_config
+from paths import CACHE_DIR
 from helpers import key_match, search, get_folder_hash, help_text
+from version import VERSION as APP_VERSION
 from ui import UI
-
-APP_VERSION = "1.0.1"
 CACHE_VERSION = "1.0"
 
-CACHE_DIR = Path(os.getenv('LOCALAPPDATA')) / 'wmus' / 'cache'
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
+# `CACHE_DIR` is provided by `paths.py` (cross-platform, created safely)
 
 if sys.platform == "win32":
     os.system("chcp 65001 > nul 2>&1")

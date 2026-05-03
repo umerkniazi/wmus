@@ -1,5 +1,5 @@
 #define MyAppName "wmus"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "Umer Khan"
 #define MyAppURL "https://github.com/umerkniazi/wmus"
 #define MyAppExeName "wmus.exe"
@@ -8,22 +8,29 @@
 AppId={{A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A3B4C5D}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
+
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
+
 AllowNoIcons=yes
 OutputDir=Output
-OutputBaseFilename=wmus-setup-v{#MyAppVersion}
+OutputBaseFilename=wmus-{#MyAppVersion}-setup
+
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+
 UninstallDisplayIcon={app}\{#MyAppExeName}
+
 ShowLanguageDialog=no
 DisableWelcomePage=no
 DisableReadyMemo=yes
@@ -61,8 +68,9 @@ begin
     Result := True;
     exit;
   end;
-  Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
+
+  Result := Pos(Lowercase(Param), Lowercase(OrigPath)) = 0;
 end;
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Parameters: "--version"; Description: "Verify installation"; Flags: nowait skipifsilent runhidden
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent

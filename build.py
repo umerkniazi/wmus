@@ -2,8 +2,7 @@ import os
 import sys
 import shutil
 import subprocess
-
-VERSION = "1.0.1"
+from version import VERSION
 
 def remove_old_builds():
     folders = ['build', 'dist', 'installer_files']
