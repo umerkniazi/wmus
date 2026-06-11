@@ -12,7 +12,8 @@ class PlaybackState(IntEnum):
     FADING = 3
 
 class MusicPlayer:
-    __slots__ = ('current_song', 'state', 'start_time', 'pause_time', '_cached_info', '_cached_duration')
+    __slots__ = ('current_song', 'state', 'start_time', 'pause_time', 'pos_offset',
+                 '_cached_info', '_cached_duration')
     
     def __init__(self):
         try:
@@ -23,6 +24,7 @@ class MusicPlayer:
         self.state = PlaybackState.STOPPED
         self.start_time = 0
         self.pause_time = 0
+        self.pos_offset = 0
         self._cached_info = None
         self._cached_duration = 0
 
@@ -42,6 +44,7 @@ class MusicPlayer:
         self.state = PlaybackState.STOPPED
         self.start_time = 0
         self.pause_time = 0
+        self.pos_offset = 0
         self._cached_info = None
         self._cached_duration = 0
 
@@ -49,26 +52,29 @@ class MusicPlayer:
         if self.current_song:
             pygame.mixer.music.play()
             self.state = PlaybackState.PLAYING
-            self.start_time = time.time() - self.pause_time
+            self.pos_offset = self.pause_time
+            self.pause_time = 0
 
     def stop(self):
         pygame.mixer.music.stop()
         self.state = PlaybackState.STOPPED
         self.start_time = 0
         self.pause_time = 0
+        self.pos_offset = 0
 
     def pause(self):
         if self.state == PlaybackState.PLAYING:
+            self.pause_time = self.get_pos()
             pygame.mixer.music.pause()
             self.state = PlaybackState.PAUSED
-            self.pause_time = time.time() - self.start_time
 
     def unpause(self):
         if self.state == PlaybackState.PAUSED and self.current_song:
             if pygame.mixer.music.get_busy() or self.pause_time > 0:
                 pygame.mixer.music.unpause()
                 self.state = PlaybackState.PLAYING
-                self.start_time = time.time() - self.pause_time
+                self.pos_offset = self.pause_time
+                self.pause_time = 0
             else:
                 self.play()
 
@@ -119,7 +125,10 @@ class MusicPlayer:
 
     def get_pos(self):
         if self.state == PlaybackState.PLAYING:
-            return int(pygame.mixer.music.get_pos() / 1000)
+            elapsed = pygame.mixer.music.get_pos()
+            if elapsed < 0:
+                elapsed = 0
+            return self.pos_offset + int(elapsed / 1000)
         elif self.pause_time > 0:
             return int(self.pause_time)
         return 0
@@ -143,10 +152,9 @@ class MusicPlayer:
         try:
             pygame.mixer.music.load(self.current_song)
             pygame.mixer.music.play(start=new_pos)
-            
+            self.pos_offset = new_pos
             if was_playing:
                 self.state = PlaybackState.PLAYING
-                self.start_time = time.time() - new_pos
                 self.pause_time = 0
             else:
                 pygame.mixer.music.pause()
