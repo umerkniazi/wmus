@@ -35,7 +35,7 @@ class UI:
     def _init_colors(self):
         if not self.colors_initialized:
             curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_CYAN)
-            curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)
+            curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_CYAN)
             curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLACK)
             curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)
             curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_BLACK)
@@ -43,6 +43,7 @@ class UI:
             curses.init_pair(7, curses.COLOR_BLACK, curses.COLOR_BLACK)
             curses.init_pair(8, curses.COLOR_GREEN, curses.COLOR_BLACK)
             curses.init_pair(9, curses.COLOR_CYAN, curses.COLOR_BLACK)
+            curses.init_pair(10, curses.COLOR_WHITE, curses.COLOR_BLACK)
             self.colors_initialized = True
     
     def _truncate_text(self, text, width):
@@ -100,7 +101,7 @@ class UI:
             
             progress = ""
             if cache.duration > 0:
-                progress_width = 20
+                progress_width = max(10, self.max_x // 6)
                 progress_ratio = pos_seconds / cache.duration
                 
                 if UNICODE_SUPPORT and SYMBOLS["progress_partial"]:
@@ -118,9 +119,6 @@ class UI:
                 else:
                     progress_percent = int(progress_ratio * progress_width)
                     progress = f"[{SYMBOLS['progress_full'] * progress_percent}{SYMBOLS['progress_empty'] * (progress_width - progress_percent)}]"
-                
-                progress_pct = int(progress_ratio * 100)
-                progress = f"{progress} {progress_pct}%"
             
             vol = int(cli.player.get_volume() * 100)
             display_name = self._truncate_text(cache.name, self.max_x // 3)
@@ -136,7 +134,7 @@ class UI:
         self.stdscr.attroff(curses.color_pair(1))
     
     def _render_content(self, cli, search_state, search_mode):
-        max_songs = max(0, self.max_y - 4)
+        max_songs = max(0, self.max_y - 3)
         
         if cli.view_mode == 2:
             self._render_album_view(cli, max_songs)
@@ -271,7 +269,8 @@ class UI:
             if idx < len(album_names):
                 album = album_names[idx]
                 track_count = len(cli.albums[album])
-                album_text = f"{album} ({track_count})"
+                track_label = "track" if track_count == 1 else "tracks"
+                album_text = f"{album} ({track_count} {track_label})"
                 album_display = self._truncate_text(album_text, left_width - 2)
                 
                 try:
@@ -336,23 +335,70 @@ class UI:
         view_names = {1: "Library", 2: "Albums", 3: "Queue"}
         view_name = view_names.get(cli.view_mode, "Library")
         
-        shuffle_status = "Shuffle: ON" if cli.shuffle else "Shuffle: OFF"
-        repeat_status = "Repeat: ON" if cli.repeat else "Repeat: OFF"
+        track_count = len(cli._get_current_songs())
+        track_label = "track" if track_count == 1 else "tracks"
         
         search_info = ""
         if search_mode and search_state and search_state.filtered_indices:
             match_count = len(search_state.filtered_indices)
             total_count = len(cli._get_display_list())
-            search_info = f" | {match_count}/{total_count} matches"
+            search_info = f"| {match_count}/{total_count} matches"
         
-        left_status = f" {view_name} | {len(cli._get_current_songs())} tracks | {shuffle_status} | {repeat_status}{search_info}"
+        prefix = f" {view_name} | {track_count} {track_label} | "
+        row = self.max_y - 3
         
         try:
             self.stdscr.attron(curses.color_pair(6))
-            self.stdscr.addstr(self.max_y - 3, 0, left_status[:self.max_x].ljust(self.max_x))
+            self.stdscr.addstr(row, 0, prefix[:self.max_x])
             self.stdscr.attroff(curses.color_pair(6))
         except curses.error:
             pass
+        
+        toggle_pos = min(len(prefix), self.max_x)
+        
+        try:
+            if cli.shuffle:
+                self.stdscr.attron(curses.color_pair(3))
+            else:
+                self.stdscr.attron(curses.color_pair(10) | curses.A_DIM)
+            self.stdscr.addstr(row, toggle_pos, "[S]")
+            self.stdscr.attroff(curses.color_pair(3) if cli.shuffle else (curses.color_pair(10) | curses.A_DIM))
+        except curses.error:
+            pass
+        
+        try:
+            self.stdscr.attron(curses.color_pair(6))
+            self.stdscr.addstr(row, toggle_pos + 3, " ")
+            self.stdscr.attroff(curses.color_pair(6))
+        except curses.error:
+            pass
+        
+        try:
+            if cli.repeat:
+                self.stdscr.attron(curses.color_pair(3))
+            else:
+                self.stdscr.attron(curses.color_pair(10) | curses.A_DIM)
+            self.stdscr.addstr(row, toggle_pos + 4, "[R]")
+            self.stdscr.attroff(curses.color_pair(3) if cli.repeat else (curses.color_pair(10) | curses.A_DIM))
+        except curses.error:
+            pass
+        
+        if search_info:
+            try:
+                self.stdscr.attron(curses.color_pair(6))
+                self.stdscr.addstr(row, toggle_pos + 7, " " + search_info[:self.max_x - toggle_pos - 7])
+                self.stdscr.attroff(curses.color_pair(6))
+            except curses.error:
+                pass
+        
+        end_pos = toggle_pos + 7 + (len(search_info) + 1 if search_info else 0)
+        if end_pos < self.max_x:
+            try:
+                self.stdscr.attron(curses.color_pair(6))
+                self.stdscr.addstr(row, end_pos, " " * (self.max_x - end_pos))
+                self.stdscr.attroff(curses.color_pair(6))
+            except curses.error:
+                pass
         
         if command_input:
             try:
@@ -401,14 +447,6 @@ class UI:
                 self.stdscr.attroff(curses.color_pair(7))
             except curses.error:
                 pass
-        
-        help_line = " [c]Play/Pause [n]Next [p]Prev [/]Search [1]Library [2]Albums [3]Queue [:help]"
-        try:
-            self.stdscr.attron(curses.color_pair(7))
-            self.stdscr.addstr(self.max_y - 1, 0, help_line[:self.max_x].ljust(self.max_x))
-            self.stdscr.attroff(curses.color_pair(7))
-        except curses.error:
-            pass
     
     def show_help(self, keybindings):
         help_msg = help_text(keybindings)
