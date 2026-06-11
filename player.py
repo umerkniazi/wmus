@@ -9,6 +9,7 @@ class PlaybackState(IntEnum):
     STOPPED = 0
     PLAYING = 1
     PAUSED = 2
+    FADING = 3
 
 class MusicPlayer:
     __slots__ = ('current_song', 'state', 'start_time', 'pause_time', '_cached_info', '_cached_duration')
@@ -73,7 +74,7 @@ class MusicPlayer:
 
     def fadeout(self, ms=2000):
         pygame.mixer.music.fadeout(ms)
-        self.state = PlaybackState.STOPPED
+        self.state = PlaybackState.FADING
 
     def set_volume(self, volume):
         pygame.mixer.music.set_volume(max(0.0, min(1.0, volume)))
@@ -117,8 +118,8 @@ class MusicPlayer:
             return self._cached_info
 
     def get_pos(self):
-        if self.state == PlaybackState.PLAYING and self.start_time > 0:
-            return int(time.time() - self.start_time)
+        if self.state == PlaybackState.PLAYING:
+            return int(pygame.mixer.music.get_pos() / 1000)
         elif self.pause_time > 0:
             return int(self.pause_time)
         return 0
@@ -155,6 +156,7 @@ class MusicPlayer:
             pass
 
     def is_song_finished(self):
+        busy = pygame.mixer.music.get_busy()
         return (self.current_song and 
-                self.state == PlaybackState.PLAYING and 
-                not pygame.mixer.music.get_busy())
+                (self.state == PlaybackState.PLAYING or self.state == PlaybackState.FADING) and 
+                not busy)
